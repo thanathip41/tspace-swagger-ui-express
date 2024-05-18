@@ -1,0 +1,40 @@
+{
+  "name": "tspace-swagger-ui-express",
+  "version": "1.0.0",
+  "description": "Auto-generated Swagger-UI API documentation from an Express application.",
+  "main": "./build/lib/index.js",
+  "types": "./build/lib/index.d.ts",
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thanathip41/tspace-swagger-ui-express.git"
+  },
+  "keywords": [
+    "tspace",
+    "tspace-swagger",
+    "tspace-swagger-ui-express",
+    "auto-generated",
+    "open-api",
+    "swagger-api",
+    "documents"
+  ],
+  "author": "Thanathip (https://github.com/thanathip41)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/thanathip41/tspace-swagger-ui-express"
+  },
+  "homepage": "https://github.com/thanathip41",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "reflect-metadata": "^0.1.14"
+  }
+}
