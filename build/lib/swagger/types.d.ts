@@ -10,7 +10,7 @@ export type TSwagger = {
     bearerToken?: boolean;
     tags?: string[];
     cookies?: {
-        values: string[];
+        names: string[];
         required?: boolean;
         description?: string;
     };

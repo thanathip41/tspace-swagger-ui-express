@@ -3,8 +3,8 @@ import expressEx, { Application, NextFunction, Request, Response } from "express
 import { TSwagger, TSwaggerDoc } from "./types";
 /**
  *
- * @param {Object} data
- * @property {string} data.mapPath
+ * @param {object} data
+ * @property {object} data.match - { page : string , method : string}
  * @property {string} data.method
  * @property {string | null} data.description
  * @property {boolean | null} data.bearerToken
@@ -33,7 +33,48 @@ export declare const Swagger: (data: TSwagger) => (target: {
 /**
  *
  * @param {Application} express  Application express() instance
- * @param {Object} doc
+ * @param {object} doc
+ * @property {string | null} data.path
+ * @property {string | null} data.staticUrl
+ * @property {Array | null} data.controllers
+ * @property {Array | null} data.servers
+ * @property {Array | null} data.tags
+ * @property {string | null} data.openapi
+ * @property {object | null} data.info
+ * @property {object | null} data.cookies
+ * @property {Array | null} data.responses
+ *
+ */
+export declare const swaggerYAML: (express: Application, doc?: TSwaggerDoc) => string;
+/**
+ *
+ * @param {Application} express  Application express() instance
+ * @param {object} doc
+ * @property {string | null} data.path
+ * @property {string | null} data.staticUrl
+ * @property {Array | null} data.controllers
+ * @property {Array | null} data.servers
+ * @property {Array | null} data.tags
+ * @property {string | null} data.openapi
+ * @property {object | null} data.info
+ * @property {object | null} data.cookies
+ * @property {Array | null} data.responses
+ *
+ */
+export declare const swaggerJSON: (express: Application, doc?: TSwaggerDoc) => string;
+/**
+ *
+ * @param {Application} express  Application express() instance
+ * @param {object} doc
+ * @property {string | null} data.path
+ * @property {string | null} data.staticUrl
+ * @property {Array | null} data.controllers
+ * @property {Array | null} data.servers
+ * @property {Array | null} data.tags
+ * @property {string | null} data.openapi
+ * @property {object | null} data.info
+ * @property {object | null} data.cookies
+ * @property {Array | null} data.responses
  *
  * @example
  * import express , { Request , Response , NextFunction } from 'express';

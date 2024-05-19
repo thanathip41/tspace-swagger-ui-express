@@ -19,6 +19,8 @@ npm install tspace-swagger-ui-express --save
   - [Server](#server)
   - [Controller](#controller)
   - [Router](#router)
+- [YAML & JSON](#yaml--json)
+
 
 ## Setup
 ```js
@@ -77,15 +79,57 @@ import CatController from './CatController';
       "title" : "Welcome to the documentation of the 'cats' story",
       "description" : "This is the documentation description about around the 'cats' story"
     },
-    responses : [
-      { status : 200 , description : "OK" , example : { success : true , message : "Cats say 'OK, slave'😻" , statsCode : 200 }},
-      { status : 201 , description : "Created" , example : { success : true , message : "Cats say 'Welcome, new slave'😻" , statsCode : 201 }},
-      { status : 400 , description : "Bad Request" , example : { success : false , message : "Cats say 'Bad foods'😻" , statsCode : 400 }},
-      { status : 401 , description : "Unauthorized" , example : { success : false , message : "Cats say 'Give me the food first'😻" , statsCode : 401 }},
-      { status : 403 , description : "Forbidden" , example : { success : false , message : "Cats say 'Not your business, slave'😻" , statsCode : 401 }},
-      { status : 500 , description : "Server Error" , example : { success : false , message : "Cats can't say 'What's the curse'😻" , statsCode : 500 }}
-    ],
     controllers : [CatController] // For custom requests related to controllers with decorators such as @Swagger.
+    responses : [
+      {
+        status: 200,
+        description: "OK",
+        example: {
+            success: true,
+            message: "Cats say 'OK, slave'😻"
+        }
+      },
+      {
+        status: 201,
+        description: "Created",
+        example: {
+          success: true,
+          message: "Cats say 'Welcome, new slave'😻"
+        }
+      },
+      {
+          status: 400,
+          description: "Bad Request",
+          example: {
+            success: false,
+            message: "Cats say 'Bad foods'😻"
+          }
+      },
+      {
+          status: 401,
+          description: "Unauthorized",
+          example: {
+            success: false,
+            message: "Cats say 'Give me the food first'😻"
+          }
+      },
+      {
+        status: 403,
+        description: "Forbidden",
+        example: {
+          success: false,
+          message: "Cats say 'Not your business, slave'😻"
+        }
+      },
+      {
+        status: 500,
+        description: "Server Error",
+        example: {
+          success: false,
+          message: "Cats can't say 'What's the curse'😻"
+        }
+      }
+    ]
   }))
   
   const PORT = 3000;
@@ -97,7 +141,6 @@ import CatController from './CatController';
 })()
 
 ```
-
 ### Controller
 ```js
 import { Request , Response , NextFunction } from 'express';
@@ -120,7 +163,7 @@ class CatController {
       }
     },
     cookies : {
-     values : ['id', 'name'],
+     names : ['id', 'name'],
      description : 'The cookies for every logged'
     },
     bearerToken : true,
@@ -285,3 +328,46 @@ catRouter
 export { catRouter }
 export default catRouter
 ```
+
+## YAML & JSON
+```js
+import express , { Request , Response , NextFunction } from 'express'
+import { swaggerYAML , swaggerJSON } from 'tspace-swagger-ui-express'
+import fs from 'fs'
+
+(async() => { 
+
+  const doc = { 
+    path : "/api/docs",
+    servers : [
+      { url : "http://localhost:3000" , description : "development"}, 
+      { url : "http://localhost:8000" , description : "production"}
+    ],
+    info : {
+      "title" : "Welcome to the documentation of the 'cats' story",
+      "description" : "This is the documentation description about around the 'cats' story"
+    }
+  }
+
+  const app = express()
+
+  app.get("/", (req : Request, res : Response , next : NextFunction) => {
+    return res.send("Hello, world!");
+  })
+
+  const yaml = swaggerYAML(app,doc)
+  const json = swaggerJSON(app,doc)
+
+  fs.writeFileSync('swagger.yaml', yaml, 'utf8')
+  fs.writeFileSync('swagger.json', json, 'utf8')
+
+  const PORT = 3000
+  
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  })
+  
+})()
+```
+
+## JSON
