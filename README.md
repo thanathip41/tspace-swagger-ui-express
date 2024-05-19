@@ -14,19 +14,119 @@ npm install tspace-swagger-ui-express --save
 
 ```
 ## Basic Usage
-```js
+- [Setup](#setup)
+- [Custom](#custom)
+  - [Server](#server)
+  - [Controller](#controller)
+  - [Router](#router)
 
-// in UserController.ts
+## Setup
+```js
+import express , { Request , Response , NextFunction } from 'express';
+import swagger from 'tspace-swagger-ui-express';
+
+(async() => { 
+
+  const app = express()
+
+  app.get("/", (req : Request, res : Response , next : NextFunction) => {
+    return res.send("Hello, world!");
+  });
+
+   app.get("/:uuid", (req : Request, res : Response , next : NextFunction) => {
+    return res.send(`Hello, world! with uuid : ${req.params.uuid}`);
+  });
+
+  app.use(swagger(app))
+  
+  const PORT = 3000;
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  })
+  
+})()
+
+```
+## Custom
+
+### Server
+```js
+import express , { Request , Response , NextFunction } from 'express';
+import swagger from 'tspace-swagger-ui-express';
+import catRoute from './catRoute';
+import CatController from './CatController';
+
+(async() => { 
+
+  const app = express()
+
+  app.get("/", (req : Request, res : Response , next : NextFunction) => {
+    return res.send("Hello, world!");
+  });
+
+  app.use("/api/v1/cats",catRoute)
+
+  app.use(swagger(app , { 
+    path : "/api/docs",
+    servers : [
+      { url : "http://localhost:3000" , description : "development"}, 
+      { url : "http://localhost:8000" , description : "production"}
+    ],
+    info : {
+      "title" : "Welcome to the documentation of the 'cats' story",
+      "description" : "This is the documentation description about around the 'cats' story"
+    },
+    responses : [
+      { status : 200 , description : "OK" , example : { success : true , message : "Cats say 'OK, slave'😻" , statsCode : 200 }},
+      { status : 201 , description : "Created" , example : { success : true , message : "Cats say 'Welcome, new slave'😻" , statsCode : 201 }},
+      { status : 400 , description : "Bad Request" , example : { success : false , message : "Cats say 'Bad foods'😻" , statsCode : 400 }},
+      { status : 401 , description : "Unauthorized" , example : { success : false , message : "Cats say 'Give me the food first'😻" , statsCode : 401 }},
+      { status : 403 , description : "Forbidden" , example : { success : false , message : "Cats say 'Not your business, slave'😻" , statsCode : 401 }},
+      { status : 500 , description : "Server Error" , example : { success : false , message : "Cats can't say 'What's the curse'😻" , statsCode : 500 }}
+    ],
+    controllers : [CatController] // For custom requests related to controllers with decorators such as @Swagger.
+  }))
+  
+  const PORT = 3000;
+  
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+  
+})()
+
+```
+
+### Controller
+```js
 import { Request , Response , NextFunction } from 'express';
 import { Swagger } from 'tspace-swagger-ui-express';
 
-class UserController {
+class CatController {
   @Swagger({
-    path : "/v1/users",
+    match : {
+      path : "/v1/cats",
+      method : 'GET',
+    },
+    query : {
+      id: {
+        type : 'string',
+        required: true,
+        description : "The 'id' of the cat"
+      },
+      name: {
+        type : 'string',
+      }
+    },
+    cookies : {
+     values : ['id', 'name'],
+     description : 'The cookies for every logged'
+    },
     bearerToken : true,
     responses : [
-      { status : 200 , description : "OK" , example : { id : 'catzxxxxxx' }},
-      { status : 400 , description : "Bad request" , example : { id : 'catz' }}
+      { status : 200 , description : "OK" , example : { id : 1 , name : 'catz' }},
+      { status : 400 , description : "Bad request" , example : { message : "Bad Bad Bad food" }}
     ]
   })
   public index (req : Request , res : Response , next : NextFunction) {
@@ -34,26 +134,17 @@ class UserController {
   }
 
   @Swagger({
-    path : "/v1/users/:uuid",
-    responses : [
-      { status : 200 , description : "OK" , example : { id : 'catz' }},
-      { status : 400 , description : "Bad request" , example : { id : 'catz' }}
-    ]
-
-  })
-  public show (req : Request , res : Response , next : NextFunction) {
-    return res.json({ message : req.params });
-  }
-
-  @Swagger({
-    path : "/v1/users",
+    match : {
+      path : "/v1/cats",
+      method : 'POST',
+    },
     bearerToken : true,
     body : {
       description : 'The description !',
       required : true,
       properties : {
         id : {
-          type : 'integer',
+          type : 'number',
           example : 1
         },
         name :  {
@@ -68,14 +159,33 @@ class UserController {
   }
 
   @Swagger({
-    path : "/v1/users/:uuid",
+    match : {
+      path : "/v1/cats/:uuid",
+      method : 'GET',
+    },
+    responses : [
+      { status : 200 , description : "OK" , example : { id : 'catz' }},
+      { status : 400 , description : "Bad request" , example : { id : 'catz' }}
+    ]
+
+  })
+  public show (req : Request , res : Response , next : NextFunction) {
+    return res.json({ message : req.params });
+  }
+
+
+  @Swagger({
+    match : {
+      path : "/v1/cats/:uuid",
+      method : 'PATCH',
+    },
     bearerToken : true,
     body : {
       description : 'The description !',
       required : true,
       properties : {
         id : {
-          type : 'integer',
+          type : 'number',
           example : 1
         },
         name :  {
@@ -86,20 +196,21 @@ class UserController {
     }
   })
   public async updated (req : Request , res : Response , next : NextFunction) {
-    return {
-      body : req.body
-    }
+    return res.json({ body : req.body})
   }
 
   @Swagger({
-    path : "/v1/users/:uuid",
+    match : {
+      path : "/v1/cats/:uuid",
+      method : 'PUT',
+    },
     bearerToken : true,
     body : {
       description : 'The description !',
       required : true,
       properties : {
         id : {
-          type : 'integer',
+          type : 'number',
           example : 1
         },
         name :  {
@@ -110,23 +221,25 @@ class UserController {
     }
   })
   public async update (req : Request , res : Response , next : NextFunction) {
-    return {
-      body : req.body
-    }
+    return res.json({ body : req.body})
   }
 
   @Swagger({
-    path : "/v1/users/:uuid",
+    match : {
+      path : "/v1/cats/:uuid",
+      method : 'DELETE',
+    },
     bearerToken : true
   })
   public async delete(req : Request , res : Response , next : NextFunction) {
-    return {
-      params : req.params
-    }
+    return res.json({ params : req.params})
   }
 
   @Swagger({
-    path : "/v1/users",
+    match : {
+      path : "/v1/cats/upload",
+      method : "POST",
+    },
     bearerToken : true,
     files : {
       required : true,
@@ -145,67 +258,30 @@ class UserController {
     }
   })
   public async upload (req : Request , res : Response , next : NextFunction) {
-    return {
-      files : req.files
-    }
+    return res.json({ files : 'files' })
   }
 }
 
-export default UserController
+export {CatController }
+export default CatController
+```
 
-------------------------------------------------------------------------
-
-// in userRouter.ts
+### Router
+```js
 import { Router } from "express"
-import { UserController } from "./UserController"
-const router = Router()
+import { CatController } from "./CatController"
+const catRouter = Router()
+const catInstance = new CatController()
 
-router.get('/' , new UserController().index)
-router.post('/' , new UserController().store)
-router.post('/upload' , new UserController().upload)
-router.get('/:uuid' , new UserController().show)
-router.put('/:uuid' , new UserController().update)
-router.patch('/:uuid' , new UserController().updated)
-router.delete('/:uuid' , new UserController().delete)
+catRouter
+.get('/' , catInstance.index)
+.post('/' , catInstance.store)
+.post('/upload' , catInstance.upload)
+.get('/:uuid' , catInstance.show)
+.put('/:uuid' , catInstance.update)
+.patch('/:uuid' , catInstance.updated)
+.delete('/:uuid' , catInstance.delete)
 
-
-export default router
-
-------------------------------------------------------------------------
-
-import express , { Request , Response , NextFunction } from 'express';
-import swagger from 'tspace-swagger-ui-express';
-import userRoute from './userRoute';
-import UserController from './UserController';
-
-(async() => { 
-
-  const app = express()
-
-  app.get('/', (req : Request, res : Response , next : NextFunction) => {
-    return res.send('Hello, world!');
-  });
-
-  app.use('/api/v1/users',userRoute)
-
-  app.use(swagger(app , { 
-    path : "/api/docs",
-    servers : [
-      { url : "http://localhost:3000" , description : "development"}, 
-      { url : "http://localhost:8000" , description : "production"}
-    ],
-    info : {
-      "title" : "Welcome to the the documentation",
-      "description" : "This is the documentation"
-    },
-    controllers : [UserController] // for custom in controllers with decorators @Swaggger
-  }))
-  
-  const PORT = 3000;
-  
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-  
-})()
+export { catRouter }
+export default catRouter
 ```

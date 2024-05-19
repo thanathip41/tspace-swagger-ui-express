@@ -1,11 +1,19 @@
-export type TSwaggerFormat = "string" | "number" | "integer" | "boolean" | "object" | "array" | "date" | "date-time" | "password" | "int32" | "int64" | "float" | "double" | "byte" | "binary" | "base64" | "email" | "uuid" | "uri" | "hostname" | "ipv4" | "ipv6" | "json" | "xml";
-export type TSwaggerType = "string" | "number" | "integer" | "boolean" | "object" | "array" | "date" | "date-time" | "file";
+type TSwaggerFormat = "string" | "number" | "integer" | "boolean" | "object" | "array" | "date" | "date-time" | "password" | "int32" | "int64" | "float" | "double" | "byte" | "binary" | "base64" | "email" | "uuid" | "uri" | "hostname" | "ipv4" | "ipv6" | "json" | "xml";
+type TSwaggerType = "string" | "number" | "integer" | "boolean" | "object" | "array" | "date" | "date-time" | "file";
 export type TSwagger = {
-    path: string;
+    match: {
+        path: string;
+        method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'get' | 'post' | 'put' | 'patch' | 'delete';
+    };
     controllers?: any[];
     description?: string;
     bearerToken?: boolean;
     tags?: string[];
+    cookies?: {
+        values: string[];
+        required?: boolean;
+        description?: string;
+    };
     query?: Record<string, {
         required?: boolean;
         description?: string;
@@ -33,12 +41,13 @@ export type TSwagger = {
     responses?: {
         status: number;
         description: string;
-        example?: any;
+        example?: Record<string, any>;
     }[];
 };
 export type TSwaggerDoc = {
+    path?: string;
+    staticUrl?: string;
     controllers?: any[];
-    path?: `/${string}`;
     servers?: {
         url: string;
         description?: string;
@@ -50,4 +59,10 @@ export type TSwaggerDoc = {
         description?: string;
         version?: string;
     };
+    responses?: {
+        status: number;
+        description: string;
+        example?: Record<string, any>;
+    }[];
 };
+export {};
