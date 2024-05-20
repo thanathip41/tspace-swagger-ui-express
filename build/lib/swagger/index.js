@@ -34,7 +34,7 @@ const normalizePath = (...paths) => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return /\/api\/api/.test(normalizedPath) ? normalizedPath.replace(/\/api\/api\//, "/api/") : normalizedPath;
 };
-const specPaths = (routes, options, httpResponse) => {
+const specPaths = (routes, options, doc) => {
     var _a, _b, _c, _d, _e;
     const paths = {};
     for (const r of routes) {
@@ -63,9 +63,9 @@ const specPaths = (routes, options, httpResponse) => {
         spec.tags = [];
         spec.parameters = [];
         spec.responses = {};
-        if (httpResponse != null) {
+        if (doc.responses != null) {
             const responses = {};
-            for (const response of httpResponse) {
+            for (const response of doc.responses) {
                 if (response == null || !Object.keys(response).length)
                     continue;
                 responses[`${response.status}`] = {
@@ -99,6 +99,10 @@ const specPaths = (routes, options, httpResponse) => {
                 ? tags == null || tags === '' || /^:[^:]*$/.test(tags) ? 'default' : tags
                 : swagger.tags
         ];
+        if ((doc.customOnly != null && doc.customOnly) && swagger == null) {
+            delete paths[path][method];
+            continue;
+        }
         if (swagger != null) {
             if (swagger.bearerToken) {
                 spec.security = [{ "BearerToken": [], "cookies": [] }];
@@ -299,7 +303,7 @@ const specSwagger = (express, doc = {}) => {
             });
         }
     }
-    spec.paths = specPaths(routes, swaggers, doc.responses);
+    spec.paths = specPaths(routes, swaggers, doc);
     return spec;
 };
 /**

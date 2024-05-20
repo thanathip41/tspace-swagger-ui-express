@@ -45,6 +45,7 @@ export type TSwagger = {
     }[];
 };
 export type TSwaggerDoc = {
+    customOnly?: boolean;
     path?: string;
     staticUrl?: string;
     controllers?: any[];

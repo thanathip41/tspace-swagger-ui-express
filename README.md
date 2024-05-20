@@ -44,7 +44,7 @@ import swagger from 'tspace-swagger-ui-express';
   const PORT = 3000;
 
   app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}/api/docs`);
   })
   
 })()
@@ -70,6 +70,7 @@ import CatController from './CatController';
   app.use("/api/v1/cats",catRoute)
 
   app.use(swagger(app , { 
+    // customOnly : true, use only custom by @Swagger only
     path : "/api/docs",
     servers : [
       { url : "http://localhost:3000" , description : "development"}, 
@@ -135,7 +136,7 @@ import CatController from './CatController';
   const PORT = 3000;
   
   app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}/api/docs`);
   });
   
 })()
@@ -369,5 +370,3 @@ import fs from 'fs'
   
 })()
 ```
-
-## JSON
