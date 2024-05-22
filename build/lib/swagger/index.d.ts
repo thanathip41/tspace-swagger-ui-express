@@ -45,7 +45,7 @@ export declare const Swagger: (data: TSwagger) => (target: {
  * @property {Array | null} data.responses
  *
  */
-export declare const swaggerYAML: (express: Application, doc?: TSwaggerDoc) => string;
+export declare const swaggerYAML: (express: Application, doc?: TSwaggerDoc) => Promise<string>;
 /**
  *
  * @param {Application} express  Application express() instance
@@ -61,7 +61,7 @@ export declare const swaggerYAML: (express: Application, doc?: TSwaggerDoc) => s
  * @property {Array | null} data.responses
  *
  */
-export declare const swaggerJSON: (express: Application, doc?: TSwaggerDoc) => string;
+export declare const swaggerJSON: (express: Application, doc?: TSwaggerDoc) => Promise<string>;
 /**
  *
  * @param {Application} express  Application express() instance

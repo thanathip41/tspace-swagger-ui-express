@@ -80,7 +80,22 @@ import CatController from './CatController';
       "title" : "Welcome to the documentation of the 'cats' story",
       "description" : "This is the documentation description about around the 'cats' story"
     },
+    excepts : [
+      // if you want to excepts some path
+      // {
+      //   path : /^\/api\/v\d+\//,
+      //   method : ['GET','POST'],
+      // }
+      // /^\/api\/v\d+\/cats/,
+      // /\/cats/
+       // "/api/v1/cats"
+      // "/api/v1/cats/:uuid"
+    ],
     controllers : [CatController] // For custom requests related to controllers with decorators such as @Swagger.
+    // controllers : {
+    //   folder : `${__dirname}/controllers`,
+    //   name :  /controller\.(ts|js)$/i
+    // } // if you want to use the directory for include all controllers
     responses : [
       {
         status: 200,
@@ -361,6 +376,11 @@ import fs from 'fs'
 
   fs.writeFileSync('swagger.yaml', yaml, 'utf8')
   fs.writeFileSync('swagger.json', json, 'utf8')
+
+  app.use(swagger(app , {
+    use : 'swagger.json' // 'swagger.yaml'
+    // excepts don't work with file .json and .yaml
+  }))
 
   const PORT = 3000
   

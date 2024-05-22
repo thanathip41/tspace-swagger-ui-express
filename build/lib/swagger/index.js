@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -17,6 +40,23 @@ require("reflect-metadata");
 const express_1 = __importDefault(require("express"));
 const swagger_ui_dist_1 = __importDefault(require("swagger-ui-dist"));
 const js_yaml_1 = __importDefault(require("js-yaml"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const deepImport = (dir, pattern) => __awaiter(void 0, void 0, void 0, function* () {
+    const directories = fs_1.default.readdirSync(dir, { withFileTypes: true });
+    const files = (yield Promise.all(directories.map((directory) => {
+        const newDir = path_1.default.resolve(String(dir), directory.name);
+        if (pattern == null) {
+            return directory.isDirectory() ? deepImport(newDir) : newDir;
+        }
+        return directory.isDirectory()
+            ? deepImport(newDir)
+            : pattern.test(directory.name)
+                ? newDir
+                : null;
+    }))).filter(d => d != null);
+    return [].concat(...files);
+});
 const getRouteParams = (path) => {
     const params = [];
     const regex = /:([^\/]+)/g;
@@ -34,6 +74,27 @@ const normalizePath = (...paths) => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return /\/api\/api/.test(normalizedPath) ? normalizedPath.replace(/\/api\/api\//, "/api/") : normalizedPath;
 };
+const pathIsExcepts = ({ excepts, path, method }) => {
+    return Array.from(excepts).some((except) => {
+        const orginPath = path.replace(/{(\w+)}/g, ":$1");
+        if (except instanceof RegExp) {
+            return except.test(orginPath);
+        }
+        if (typeof except === 'string') {
+            return except === orginPath;
+        }
+        if (except.path instanceof RegExp) {
+            return except.path.test(orginPath) &&
+                Array.isArray(except.method)
+                ? Array.from(except.method).some(m => m.toLocaleLowerCase() === method)
+                : String(except.method).toLocaleLowerCase() === method;
+        }
+        return String(except.path) === orginPath &&
+            Array.isArray(except.method)
+            ? Array.from(except.method).some(m => m.toLocaleLowerCase() === method)
+            : String(except.method).toLocaleLowerCase() === method;
+    });
+};
 const specPaths = (routes, options, doc) => {
     var _a, _b, _c, _d, _e;
     const paths = {};
@@ -42,6 +103,12 @@ const specPaths = (routes, options, doc) => {
             continue;
         const path = r.path.replace(/:(\w+)/g, "{$1}");
         const method = r.method.toLocaleLowerCase();
+        if (doc.excepts != null && pathIsExcepts({
+            excepts: doc.excepts,
+            path,
+            method
+        }))
+            continue;
         if (paths[path] == null) {
             paths[path] = {
                 [method]: {}
@@ -241,19 +308,37 @@ const specPaths = (routes, options, doc) => {
     }
     return paths;
 };
-const specSwagger = (express, doc = {}) => {
-    var _a, _b, _c, _d, _e, _f;
-    const swaggers = [];
-    const controllers = [...new Set((_a = doc === null || doc === void 0 ? void 0 : doc.controllers) !== null && _a !== void 0 ? _a : [])];
-    for (const controller of controllers) {
-        const swagger = (_b = Reflect.getMetadata("swaggers", controller)) !== null && _b !== void 0 ? _b : [];
-        if (!swagger.length)
-            continue;
-        swaggers.push(() => swagger);
-    }
+const specSwagger = (express, doc = {}) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    const swaggerHandler = (controllers) => __awaiter(void 0, void 0, void 0, function* () {
+        var _e, _f;
+        const swaggers = [];
+        if (controllers == null)
+            return swaggers;
+        if (!Array.isArray(controllers)) {
+            const c = yield deepImport(controllers.folder, controllers.name);
+            for (const file of c) {
+                const response = yield Promise.resolve(`${file}`).then(s => __importStar(require(s)));
+                const controller = response === null || response === void 0 ? void 0 : response.default;
+                const swagger = (_e = Reflect.getMetadata("swaggers", controller)) !== null && _e !== void 0 ? _e : [];
+                if (!swagger.length)
+                    continue;
+                swaggers.push(() => swagger);
+            }
+            return swaggers;
+        }
+        for (const controller of controllers) {
+            const swagger = (_f = Reflect.getMetadata("swaggers", controller)) !== null && _f !== void 0 ? _f : [];
+            if (!swagger.length)
+                continue;
+            swaggers.push(() => swagger);
+        }
+        return swaggers;
+    });
+    const swaggers = yield swaggerHandler(doc.controllers);
     const spec = {
-        openapi: (_c = doc.openapi) !== null && _c !== void 0 ? _c : "3.1.0",
-        info: (_d = doc.info) !== null && _d !== void 0 ? _d : {
+        openapi: (_a = doc.openapi) !== null && _a !== void 0 ? _a : "3.1.0",
+        info: (_b = doc.info) !== null && _b !== void 0 ? _b : {
             title: 'API Documentation',
             description: "Documentation",
             version: '1.0.0'
@@ -274,8 +359,8 @@ const specSwagger = (express, doc = {}) => {
                 }
             }
         },
-        servers: (_e = doc.servers) !== null && _e !== void 0 ? _e : [{ url: "", description: 'default' }],
-        tags: (_f = doc.tags) !== null && _f !== void 0 ? _f : [],
+        servers: (_c = doc.servers) !== null && _c !== void 0 ? _c : [{ url: "", description: 'default' }],
+        tags: (_d = doc.tags) !== null && _d !== void 0 ? _d : [],
         paths: {},
     };
     const routes = [];
@@ -305,7 +390,7 @@ const specSwagger = (express, doc = {}) => {
     }
     spec.paths = specPaths(routes, swaggers, doc);
     return spec;
-};
+});
 /**
  *
  * @param {object} data
@@ -358,9 +443,9 @@ exports.Swagger = Swagger;
  * @property {Array | null} data.responses
  *
  */
-const swaggerYAML = (express, doc = {}) => {
-    return js_yaml_1.default.dump(specSwagger(express, doc));
-};
+const swaggerYAML = (express, doc = {}) => __awaiter(void 0, void 0, void 0, function* () {
+    return js_yaml_1.default.dump(yield specSwagger(express, doc));
+});
 exports.swaggerYAML = swaggerYAML;
 /**
  *
@@ -377,9 +462,9 @@ exports.swaggerYAML = swaggerYAML;
  * @property {Array | null} data.responses
  *
  */
-const swaggerJSON = (express, doc = {}) => {
-    return JSON.stringify(specSwagger(express, doc), null, 2);
-};
+const swaggerJSON = (express, doc = {}) => __awaiter(void 0, void 0, void 0, function* () {
+    return JSON.stringify(yield specSwagger(express, doc), null, 2);
+});
 exports.swaggerJSON = swaggerJSON;
 /**
  *
@@ -421,7 +506,13 @@ exports.default = (express, doc = {}) => {
         try {
             if (req.path !== ((_a = doc.path) !== null && _a !== void 0 ? _a : '/api/docs'))
                 return next();
-            const spec = specSwagger(express, doc);
+            const spec = doc.use == null
+                ? JSON.stringify(yield specSwagger(express, doc))
+                : String(doc.use).endsWith('.yaml')
+                    ? JSON.stringify(js_yaml_1.default.load(fs_1.default.readFileSync(doc.use, 'utf8')))
+                    : String(doc.use).endsWith('.json')
+                        ? fs_1.default.readFileSync(doc.use, 'utf8')
+                        : JSON.stringify(yield specSwagger(express, doc));
             const iconURL = normalizePath((_b = doc.staticUrl) !== null && _b !== void 0 ? _b : '', `${STATIC_URL}/favicon-32x32.png`).replace(/^\/(http[s]?:\/{0,2})/, '$1');
             const cssURL = normalizePath((_c = doc.staticUrl) !== null && _c !== void 0 ? _c : '', `${STATIC_URL}/swagger-ui.css`).replace(/^\/(http[s]?:\/{0,2})/, '$1');
             const scriptBundle = normalizePath((_d = doc.staticUrl) !== null && _d !== void 0 ? _d : '', `${STATIC_URL}/swagger-ui-bundle.js`).replace(/^\/(http[s]?:\/{0,2})/, '$1');
@@ -443,10 +534,13 @@ exports.default = (express, doc = {}) => {
                 <script src="${scriptStandalonePreset}"></script>
                 <script>
                     window.onload = () => {
-                        window.ui = SwaggerUIBundle({ spec : ${JSON.stringify(spec)} , 
-                        dom_id: '#swagger-ui',
-                        withCredentials: true,
-                        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset], layout: "StandaloneLayout"});
+                        window.ui = SwaggerUIBundle({ 
+                            spec : ${spec}, 
+                            dom_id: '#swagger-ui',
+                            withCredentials: true,
+                            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset], 
+                            layout: "StandaloneLayout"
+                        });
                     };
                 </script>
             </html>
