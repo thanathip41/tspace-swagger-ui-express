@@ -42,6 +42,19 @@ const swagger_ui_dist_1 = __importDefault(require("swagger-ui-dist"));
 const js_yaml_1 = __importDefault(require("js-yaml"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const expandedSwagger = (swaggers) => {
+    return swaggers.reduce((acc, v) => {
+        var _a, _b;
+        if (!Array.isArray((_a = v.match) === null || _a === void 0 ? void 0 : _a.method)) {
+            acc.push(v);
+            return acc;
+        }
+        (_b = v.match) === null || _b === void 0 ? void 0 : _b.method.forEach(method => {
+            acc.push(Object.assign(Object.assign({}, v), { match: Object.assign(Object.assign({}, v.match), { method }) }));
+        });
+        return acc;
+    }, []);
+};
 const deepImport = (dir, pattern) => __awaiter(void 0, void 0, void 0, function* () {
     const directories = fs_1.default.readdirSync(dir, { withFileTypes: true });
     const files = (yield Promise.all(directories.map((directory) => {
@@ -179,6 +192,20 @@ const specPaths = (routes, options, doc) => {
             }
             if (Array.from(r.params).length) {
                 spec.parameters = Array.from(r === null || r === void 0 ? void 0 : r.params).map(params => {
+                    var _a;
+                    if (swagger.params != null && swagger.params[`${params}`]) {
+                        const v = swagger.params[`${params}`];
+                        return {
+                            name: params,
+                            in: "path",
+                            required: true,
+                            schema: {
+                                type: (_a = v.type) !== null && _a !== void 0 ? _a : "string"
+                            },
+                            example: v.example,
+                            description: v.description
+                        };
+                    }
                     return {
                         name: params,
                         in: "path",
@@ -192,13 +219,16 @@ const specPaths = (routes, options, doc) => {
                     spec.parameters = [
                         ...spec.parameters,
                         Object.entries(swagger.query).map(([k, v]) => {
+                            var _a;
                             return {
                                 name: k,
                                 in: "query",
                                 required: v.required == null ? false : true,
                                 schema: {
-                                    type: v.type
-                                }
+                                    type: (_a = v.type) !== null && _a !== void 0 ? _a : "string"
+                                },
+                                example: v.example,
+                                description: v.description
                             };
                         })
                     ];
@@ -207,13 +237,15 @@ const specPaths = (routes, options, doc) => {
             if (swagger.query != null) {
                 spec.parameters = Object.entries(swagger.query)
                     .map(([k, v]) => {
+                    var _a;
                     return {
                         name: k,
                         in: "query",
                         required: v.required == null ? false : true,
                         schema: {
-                            type: v.type
+                            type: (_a = v.type) !== null && _a !== void 0 ? _a : "string"
                         },
+                        example: v.example,
                         description: v.description
                     };
                 });
@@ -311,7 +343,7 @@ const specPaths = (routes, options, doc) => {
 const specSwagger = (express, doc = {}) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     const swaggerHandler = (controllers) => __awaiter(void 0, void 0, void 0, function* () {
-        var _e, _f;
+        var _e, _f, _g, _h;
         const swaggers = [];
         if (controllers == null)
             return swaggers;
@@ -319,16 +351,21 @@ const specSwagger = (express, doc = {}) => __awaiter(void 0, void 0, void 0, fun
             const c = yield deepImport(controllers.folder, controllers.name);
             for (const file of c) {
                 const response = yield Promise.resolve(`${file}`).then(s => __importStar(require(s)));
-                const controller = response === null || response === void 0 ? void 0 : response.default;
-                const swagger = (_e = Reflect.getMetadata("swaggers", controller)) !== null && _e !== void 0 ? _e : [];
-                if (!swagger.length)
+                const controller = (_e = response === null || response === void 0 ? void 0 : response.default) !== null && _e !== void 0 ? _e : Object.values(response)[0];
+                if (controller == null)
                     continue;
-                swaggers.push(() => swagger);
+                if (!((controller === null || controller === void 0 ? void 0 : controller.prototype) &&
+                    ((_f = controller === null || controller === void 0 ? void 0 : controller.prototype) === null || _f === void 0 ? void 0 : _f.constructor) === controller))
+                    continue;
+                const swagger = (_g = Reflect.getMetadata("swaggers", controller)) !== null && _g !== void 0 ? _g : [];
+                if (!Array.isArray(swagger) || !swagger.length)
+                    continue;
+                swaggers.push(() => expandedSwagger(swagger));
             }
             return swaggers;
         }
         for (const controller of controllers) {
-            const swagger = (_f = Reflect.getMetadata("swaggers", controller)) !== null && _f !== void 0 ? _f : [];
+            const swagger = (_h = Reflect.getMetadata("swaggers", controller)) !== null && _h !== void 0 ? _h : [];
             if (!swagger.length)
                 continue;
             swaggers.push(() => swagger);

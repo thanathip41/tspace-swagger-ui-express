@@ -1,6 +1,6 @@
 {
   "name": "tspace-swagger-ui-express",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Auto-generated Swagger-UI API documentation from an Express application.",
   "main": "./build/lib/index.js",
   "types": "./build/lib/index.d.ts",
@@ -13,7 +13,7 @@
   },
   "keywords": [
     "tspace",
-    "tspace-swagger",
+    "tspace-swagger-ui",
     "tspace-swagger-ui-express",
     "auto-generated",
     "open-api",

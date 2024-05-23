@@ -4,21 +4,21 @@ export type TMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'get' | 'pos
 export type TSwagger = {
     match: {
         path: string;
-        method: TMethod;
+        method: TMethod | TMethod[];
     };
     controllers?: any[];
     description?: string;
     bearerToken?: boolean;
     tags?: string[];
-    cookies?: {
-        names: string[];
-        required?: boolean;
+    params?: Record<string, {
         description?: string;
-    };
+        type?: TSwaggerType;
+        example?: any;
+    }>;
     query?: Record<string, {
         required?: boolean;
         description?: string;
-        type: TSwaggerType;
+        type?: TSwaggerType;
         example?: any;
     }>;
     body?: {
@@ -38,6 +38,11 @@ export type TSwagger = {
             items?: any;
             example?: any;
         }>;
+    };
+    cookies?: {
+        names: string[];
+        required?: boolean;
+        description?: string;
     };
     responses?: {
         status: number;

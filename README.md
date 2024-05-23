@@ -81,14 +81,15 @@ import CatController from './CatController';
       "description" : "This is the documentation description about around the 'cats' story"
     },
     excepts : [
-      // if you want to excepts some path
+      // if you want to excepts some path following the example
+      
       // {
       //   path : /^\/api\/v\d+\//,
       //   method : ['GET','POST'],
       // }
       // /^\/api\/v\d+\/cats/,
       // /\/cats/
-       // "/api/v1/cats"
+      //  "/api/v1/cats"
       // "/api/v1/cats/:uuid"
     ],
     controllers : [CatController] // For custom requests related to controllers with decorators such as @Swagger.
@@ -220,8 +221,14 @@ class CatController {
   @Swagger({
     match : {
       path : "/v1/cats/:uuid",
-      method : 'GET',
+      method : 'GET'
     },
+    params : {
+      uuid: {
+        description : "The 'uuid' of the cat",
+        example : "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      }
+    }
     responses : [
       { status : 200 , description : "OK" , example : { id : 'catz' }},
       { status : 400 , description : "Bad request" , example : { id : 'catz' }}
@@ -232,36 +239,10 @@ class CatController {
     return res.json({ message : req.params });
   }
 
-
   @Swagger({
     match : {
       path : "/v1/cats/:uuid",
-      method : 'PATCH',
-    },
-    bearerToken : true,
-    body : {
-      description : 'The description !',
-      required : true,
-      properties : {
-        id : {
-          type : 'number',
-          example : 1
-        },
-        name :  {
-          type : 'string',
-          example : "xxxxx"
-        }
-      }
-    }
-  })
-  public async updated (req : Request , res : Response , next : NextFunction) {
-    return res.json({ body : req.body})
-  }
-
-  @Swagger({
-    match : {
-      path : "/v1/cats/:uuid",
-      method : 'PUT',
+      method : ['PUT' , 'PATCH']
     },
     bearerToken : true,
     body : {
@@ -286,7 +267,7 @@ class CatController {
   @Swagger({
     match : {
       path : "/v1/cats/:uuid",
-      method : 'DELETE',
+      method : 'DELETE'
     },
     bearerToken : true
   })
@@ -297,7 +278,7 @@ class CatController {
   @Swagger({
     match : {
       path : "/v1/cats/upload",
-      method : "POST",
+      method : "POST"
     },
     bearerToken : true,
     files : {
@@ -317,7 +298,7 @@ class CatController {
     }
   })
   public async upload (req : Request , res : Response , next : NextFunction) {
-    return res.json({ files : 'files' })
+    return res.json({ files : req.files })
   }
 }
 
