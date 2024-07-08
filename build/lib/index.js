@@ -25,3 +25,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const swagger_1 = __importDefault(require("./swagger"));
 __exportStar(require("./swagger"), exports);
 exports.default = swagger_1.default;
+//# sourceMappingURL=index.js.map

@@ -60,10 +60,10 @@ const deepImport = (dir, pattern) => __awaiter(void 0, void 0, void 0, function*
     const files = (yield Promise.all(directories.map((directory) => {
         const newDir = path_1.default.resolve(String(dir), directory.name);
         if (pattern == null) {
-            return directory.isDirectory() ? deepImport(newDir) : newDir;
+            return directory.isDirectory() ? deepImport(newDir, pattern) : newDir;
         }
         return directory.isDirectory()
-            ? deepImport(newDir)
+            ? deepImport(newDir, pattern)
             : pattern.test(directory.name)
                 ? newDir
                 : null;
@@ -350,17 +350,22 @@ const specSwagger = (express, doc = {}) => __awaiter(void 0, void 0, void 0, fun
         if (!Array.isArray(controllers)) {
             const c = yield deepImport(controllers.folder, controllers.name);
             for (const file of c) {
-                const response = yield Promise.resolve(`${file}`).then(s => __importStar(require(s)));
-                const controller = (_e = response === null || response === void 0 ? void 0 : response.default) !== null && _e !== void 0 ? _e : Object.values(response)[0];
-                if (controller == null)
+                try {
+                    const response = yield Promise.resolve(`${file}`).then(s => __importStar(require(s)));
+                    const controller = (_e = response === null || response === void 0 ? void 0 : response.default) !== null && _e !== void 0 ? _e : Object.values(response)[0];
+                    if (controller == null)
+                        continue;
+                    if (!((controller === null || controller === void 0 ? void 0 : controller.prototype) &&
+                        ((_f = controller === null || controller === void 0 ? void 0 : controller.prototype) === null || _f === void 0 ? void 0 : _f.constructor) === controller))
+                        continue;
+                    const swagger = (_g = Reflect.getMetadata("swaggers", controller)) !== null && _g !== void 0 ? _g : [];
+                    if (!Array.isArray(swagger) || !swagger.length)
+                        continue;
+                    swaggers.push(() => expandedSwagger(swagger));
+                }
+                catch (e) {
                     continue;
-                if (!((controller === null || controller === void 0 ? void 0 : controller.prototype) &&
-                    ((_f = controller === null || controller === void 0 ? void 0 : controller.prototype) === null || _f === void 0 ? void 0 : _f.constructor) === controller))
-                    continue;
-                const swagger = (_g = Reflect.getMetadata("swaggers", controller)) !== null && _g !== void 0 ? _g : [];
-                if (!Array.isArray(swagger) || !swagger.length)
-                    continue;
-                swaggers.push(() => expandedSwagger(swagger));
+                }
             }
             return swaggers;
         }
@@ -589,3 +594,4 @@ exports.default = (express, doc = {}) => {
         }
     });
 };
+//# sourceMappingURL=index.js.map
