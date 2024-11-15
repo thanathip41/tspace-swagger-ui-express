@@ -149,6 +149,7 @@ const specPaths = (
 
         if(doc.responses != null) {
             const responses : Record<string,any> = {}
+            
             for(const response of doc.responses) {
            
                 if(response == null || !Object.keys(response).length) continue
@@ -202,8 +203,12 @@ const specPaths = (
             }
 
             if(swagger.description != null) {
-                spec.summary = swagger.description
+                spec.description = swagger.description
             } 
+
+            if(swagger.summary != null) {
+                spec.summary = swagger.summary
+            }
            
             if(Array.from(r.params).length) {
                 spec.parameters = Array.from(r?.params).map(params => {
@@ -231,40 +236,24 @@ const specPaths = (
                     }
                     
                 })
-
-                if(swagger.query != null) {
-                    spec.parameters = [
-                        ...spec.parameters,
-                        Object.entries(swagger.query).map(([k , v]) => {
-                            return {
-                                name : k,
-                                in : "query",
-                                required: v.required == null ? false : true,
-                                schema: {
-                                    type: v.type ?? "string"
-                                },
-                                example: v.example,
-                                description : v.description
-                            }
-                        })
-                    ]
-                }
             }
 
             if(swagger.query != null) {
-                spec.parameters = Object.entries(swagger.query)
-                .map(([k , v]) => {
-                    return {
-                        name : k,
-                        in : "query",
-                        required: v.required == null ? false : true,
-                        schema: {
-                            type: v.type ?? "string"
-                        },
-                        example: v.example,
-                        description : v.description
-                    }
-                })
+                spec.parameters = [
+                    ...spec.parameters,
+                    ...Object.entries(swagger.query).map(([k , v]) => {
+                        return {
+                            name : k,
+                            in : "query",
+                            required: v.required == null ? false : true,
+                            schema: {
+                                type: v.type ?? "string"
+                            },
+                            example: v.example,
+                            description : v.description
+                        }
+                    })
+                ]
             }
 
             if(swagger.cookies != null) {

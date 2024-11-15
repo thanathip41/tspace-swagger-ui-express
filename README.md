@@ -228,7 +228,18 @@ class CatController {
         description : "The 'uuid' of the cat",
         example : "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
       }
-    }
+    },
+     query : {
+      id: {
+        type : 'string',
+        required: true,
+        description : "The 'id' of the cat",
+        example : '1'
+      },
+      name: {
+        type : 'string',
+      }
+    },
     responses : [
       { status : 200 , description : "OK" , example : { id : 'catz' }},
       { status : 400 , description : "Bad request" , example : { id : 'catz' }}
@@ -236,7 +247,7 @@ class CatController {
 
   })
   public show (req : Request , res : Response , next : NextFunction) {
-    return res.json({ message : req.params });
+    return res.json({ params : req.params , query : req.query });
   }
 
   @Swagger({

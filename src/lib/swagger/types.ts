@@ -11,6 +11,7 @@ export type TSwagger = {
     },
     controllers ?: any[],
     description ?: string
+    summary ?: string,
     bearerToken ?: boolean
     tags        ?: string[]
     params ?: Record<string , {
