@@ -13,6 +13,16 @@ Install with [npm](https://www.npmjs.com/):
 npm install tspace-swagger-ui-express --save
 
 ```
+
+## Requirements
+```sh
+- Express **4.x**
+
+> ⚠️ This package currently supports **Express 4.x only**.  
+> Express 5+ is **not supported** due to internal routing changes.
+
+```
+
 ## Basic Usage
 - [Setup](#setup)
 - [Custom](#custom)
@@ -70,7 +80,16 @@ import CatController from './CatController';
   app.use("/api/v1/cats",catRoute)
 
   app.use(swagger(app , { 
-    // customOnly : true, use only custom by @Swagger only
+    options : {
+      decoratedOnly : true,
+      withCredentials : true,
+      filter : true,
+      docExpansion : "list",
+      deepLinking : true,
+      displayOperationId : false,
+      displayRequestDuration : false,
+      layout : 'StandaloneLayout'
+    },
     path : "/api/docs",
     servers : [
       { url : "http://localhost:3000" , description : "development"}, 

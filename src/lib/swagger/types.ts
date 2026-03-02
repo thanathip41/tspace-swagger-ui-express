@@ -56,7 +56,6 @@ export type TSwagger = {
 }
 
 export type TSwaggerDoc = {
-    customOnly ?: boolean
     excepts ?: (string | RegExp | { path : string | RegExp , method : TMethod | TMethod[] })[]
     use ?: `${string}.json` | `${string}.yaml`
     path ?: string
@@ -74,5 +73,15 @@ export type TSwaggerDoc = {
         status : number,
         description : string,
         example ?: Record<string,any>
-    }[]
+    }[],
+    options ?: {
+        decoratedOnly ?: boolean, // default : false
+        withCredentials ?: boolean, // default : true
+        filter ?: boolean // default : false
+        docExpansion ?: "none" | "list" | "full", // default : "list"
+        deepLinking?: boolean, // default : true
+        displayOperationId?: boolean, // default : false
+        displayRequestDuration?: boolean, // default : false
+        layout?: 'BaseLayout' | 'StandaloneLayout' // default : 'StandaloneLayout'
+    }
 }

@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import expressEx, { Application, NextFunction, Request, Response } from "express";
+import express, { Application, NextFunction, Request, Response } from "express";
 import swaggerUiDist from 'swagger-ui-dist'
 import yaml from 'js-yaml'
 import path from 'path'
@@ -142,6 +142,24 @@ const specPaths = (
             return match
         }).filter(d => d != null)[0] as TSwagger | null
 
+        const defaultSpecResponse = {
+            "200": {
+                description: "OK", 
+                content: {
+                    "application/json": {
+                        schema : {
+                            type: 'object', 
+                            properties: {
+                                message : { 
+                                    example : "success" 
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         const spec : Record<string,any> = {}
         spec.tags = []
         spec.parameters = []
@@ -190,42 +208,16 @@ const specPaths = (
             : swagger.tags
         ]
 
-        if((doc.customOnly != null && doc.customOnly) && swagger == null) {
-            delete paths[path][method]
-            continue 
-        }
-            
+        if(swagger == null) {
 
-        if(swagger != null) {
-
-            if(swagger.bearerToken) {
-                spec.security = [{ "BearerToken": [] , "cookies": [] }]
+            if((doc.options?.decoratedOnly)) {
+                delete paths[path][method]
+                continue 
             }
 
-            if(swagger.description != null) {
-                spec.description = swagger.description
-            } 
-
-            if(swagger.summary != null) {
-                spec.summary = swagger.summary
-            }
-           
             if(Array.from(r.params).length) {
-                spec.parameters = Array.from(r?.params).map(params => {
-                    if(swagger.params != null && swagger.params[`${params}`]) {
-                        const v = swagger.params[`${params}`]
-                        return {
-                            name : params,
-                            in : "path",
-                            required: true,
-                            schema: {
-                                type: v.type ?? "string"
-                            },
-                            example: v.example,
-                            description : v.description
-                        }
-                    }
-                
+                spec.parameters = Array.from(r.params)
+                .map(params => {
                     return {
                         name : params,
                         in : "path",
@@ -234,113 +226,45 @@ const specPaths = (
                             type: "string"
                         }
                     }
-                    
                 })
             }
-
-            if(swagger.query != null) {
-                spec.parameters = [
-                    ...spec.parameters,
-                    ...Object.entries(swagger.query).map(([k , v]) => {
-                        return {
-                            name : k,
-                            in : "query",
-                            required: v.required == null ? false : true,
-                            schema: {
-                                type: v.type ?? "string"
-                            },
-                            example: v.example,
-                            description : v.description
-                        }
-                    })
-                ]
-            }
-
-            if(swagger.cookies != null) {
-                spec.parameters = [
-                    ...spec.parameters,
-                    ...[{
-                        name : "Cookie",
-                        in : "header",
-                        required: swagger.cookies.required == null ? false : true,
-                        schema: {
-                            type: "string"
-                        },
-                        example : swagger.cookies.names.map((v,i) => `${v}={value${i+1}}`).join(' ; '),
-                        description : swagger.cookies?.description
-                    }]
-                ]
-            }
-
-            if(swagger.body != null) {
-                spec.requestBody = {
-                    description: swagger.body?.description == null ? "description" : swagger.body.description,
-                    required: swagger.body?.required == null ? false : true,
-                    content : {
-                        "application/json" : {
-                            schema : {
-                                type: "object",
-                                properties: swagger.body.properties
-                            }
-                        }
-                    }
-                }
-            }
-
-            if(swagger.files != null) {
-                spec.requestBody = {
-                    description: swagger.files?.description == null ? "description" : swagger.files.description,
-                    required: swagger.files?.required == null ? false : true,
-                    content : {
-                        "multipart/form-data" : {
-                            schema : {
-                                type: "object",
-                                properties: swagger.files.properties
-                            }
-                        }
-                    }
-                }
-            }
-
-            if(swagger.responses != null) {
-                spec.responses = {}
-                const responses : Record<string,any> = {}
-                for(const response of swagger.responses) {
-               
-                    if(response == null || !Object.keys(response).length) continue
-
-                    responses[`${response.status}`] = {
-                        description: response.description, 
-                        content: {
-                            "application/json": {
-                                schema : {
-                                    type: 'object', 
-                                    properties: response.example == null 
-                                    ? {} 
-                                    : Object.keys(response.example)
-                                    .reduce((prev : Record<string,any>, key : string) => {
-                                        prev[key] = { example : (response?.example ?? {})[key] ?? {} }
-                                        return prev;
-                                    }, {})
-                                }
-                            }
-                        }
-                    }
-                }
-
-                spec.responses = {
-                    ...responses
-                }
-            }
-        
-            paths[path][method] = spec
             
+            if(!Object.keys(spec.responses).length) {
+                spec.responses = spec.responses = defaultSpecResponse
+            }
+
+            paths[path][method] = spec  
             continue
         }
+            
+        if(swagger.bearerToken) {
+            spec.security = [{ "BearerToken": [] , "cookies": [] }]
+        }
 
+        if(swagger.description != null) {
+            spec.description = swagger.description
+        } 
+
+        if(swagger.summary != null) {
+            spec.summary = swagger.summary
+        }
+        
         if(Array.from(r.params).length) {
-            spec.parameters = Array.from(r.params)
-            .map(params => {
+            spec.parameters = Array.from(r?.params).map(params => {
+                if(swagger.params != null && swagger.params[`${params}`]) {
+                    const v = swagger.params[`${params}`]
+                    return {
+                        name : params,
+                        in : "path",
+                        required: true,
+                        schema: {
+                            type: v.type ?? "string"
+                        },
+                        example: v.example,
+                        description : v.description
+                    }
+                }
+            
                 return {
                     name : params,
                     in : "path",
@@ -349,18 +273,118 @@ const specPaths = (
                         type: "string"
                     }
                 }
+                
             })
         }
 
-        paths[path][method] = spec           
+        if(swagger.query != null) {
+            spec.parameters = [
+                ...spec.parameters,
+                ...Object.entries(swagger.query).map(([k , v]) => {
+                    return {
+                        name : k,
+                        in : "query",
+                        required: v.required == null ? false : true,
+                        schema: {
+                            type: v.type ?? "string"
+                        },
+                        example: v.example,
+                        description : v.description
+                    }
+                })
+            ]
+        }
 
+        if(swagger.cookies != null) {
+            spec.parameters = [
+                ...spec.parameters,
+                ...[{
+                    name : "Cookie",
+                    in : "header",
+                    required: swagger.cookies.required == null ? false : true,
+                    schema: {
+                        type: "string"
+                    },
+                    example : swagger.cookies.names.map((v,i) => `${v}={value${i+1}}`).join(' ; '),
+                    description : swagger.cookies?.description
+                }]
+            ]
+        }
+
+        if(swagger.body != null) {
+            spec.requestBody = {
+                description: swagger.body?.description == null ? "description" : swagger.body.description,
+                required: swagger.body?.required == null ? false : true,
+                content : {
+                    "application/json" : {
+                        schema : {
+                            type: "object",
+                            properties: swagger.body.properties
+                        }
+                    }
+                }
+            }
+        }
+
+        if(swagger.files != null) {
+            spec.requestBody = {
+                description: swagger.files?.description == null ? "description" : swagger.files.description,
+                required: swagger.files?.required == null ? false : true,
+                content : {
+                    "multipart/form-data" : {
+                        schema : {
+                            type: "object",
+                            properties: swagger.files.properties
+                        }
+                    }
+                }
+            }
+        }
+
+        if(swagger.responses != null) {
+            spec.responses = {}
+            const responses : Record<string,any> = {}
+            for(const response of swagger.responses) {
+            
+                if(response == null || !Object.keys(response).length) continue
+
+                responses[`${response.status}`] = {
+                    description: response.description, 
+                    content: {
+                        "application/json": {
+                            schema : {
+                                type: 'object', 
+                                properties: response.example == null 
+                                ? {} 
+                                : Object.keys(response.example)
+                                .reduce((prev : Record<string,any>, key : string) => {
+                                    prev[key] = { example : (response?.example ?? {})[key] ?? {} }
+                                    return prev;
+                                }, {})
+                            }
+                        }
+                    }
+                }
+            }
+
+            spec.responses = {
+                ...responses
+            }
+        }
+
+        if(!Object.keys(spec.responses).length) {
+            spec.responses = defaultSpecResponse
+        }
+    
+        paths[path][method] = spec
+        
     }
 
     return paths
     
 }
 
-const specSwagger =  async (express : Application, doc : TSwaggerDoc = {}) => {
+const specSwagger =  async (app : Application, doc : TSwaggerDoc = {}) => {
 
     const swaggerHandler = async (controllers ?: any[] | { folder : string ,  name ?: RegExp}) => {
         
@@ -414,7 +438,7 @@ const specSwagger =  async (express : Application, doc : TSwaggerDoc = {}) => {
     const swaggers = await swaggerHandler(doc.controllers)
     
     const spec = {
-        openapi : doc.openapi ?? "3.1.0",
+        openapi : doc.openapi ?? "3.1.2",
         info: doc.info ?? {
             title : 'API Documentation',
             description : "Documentation",
@@ -443,12 +467,12 @@ const specSwagger =  async (express : Application, doc : TSwaggerDoc = {}) => {
 
     const routes: { method: string; path: string; params: string[] }[] = [];
 
-    for (const middleware of express._router.stack) {
-        if (middleware.route) {
+    for (const layer of app._router?.stack ?? []) {
+        if (layer.route) {
             const route = {
-                method: middleware.route.stack[0].method.toUpperCase(),
-                path: normalizePath(middleware.route.path),
-                params: getRouteParams(middleware.route.path)
+                method: layer.route.stack[0].method.toUpperCase(),
+                path: normalizePath(layer.route.path),
+                params: getRouteParams(layer.route.path)
             }
 
             routes.push(route)
@@ -456,12 +480,12 @@ const specSwagger =  async (express : Application, doc : TSwaggerDoc = {}) => {
             continue
         } 
         
-        if (middleware.name === 'router') {
-            middleware.handle.stack.forEach((handler: any) => {
+        if (layer.name === 'router') {
+            layer.handle.stack.forEach((handler: any) => {
                 const route = {
                     method: handler.route.stack[0].method.toUpperCase(),
                     path: normalizePath(
-                        middleware.regexp.toString()
+                        layer.regexp.toString()
                         .replace("/^\\",'')
                         .replace('\\/?(?=\\/|$)/i','')
                         .replace(/\\\//g, "/")
@@ -475,6 +499,7 @@ const specSwagger =  async (express : Application, doc : TSwaggerDoc = {}) => {
             })
         }
     }
+
 
     spec.paths = specPaths(routes , swaggers , doc)
 
@@ -525,7 +550,7 @@ export const Swagger = (data : TSwagger) => {
 
 /**
  * 
- * @param {Application} express  Application express() instance
+ * @param {Application} app  Application express() instance
  * @param {object} doc
  * @property {string | null} data.path
  * @property {string | null} data.staticUrl
@@ -538,13 +563,13 @@ export const Swagger = (data : TSwagger) => {
  * @property {Array | null} data.responses
  * 
  */
-export const swaggerYAML = async (express : Application, doc : TSwaggerDoc = {}) => {
-    return yaml.dump(await specSwagger(express , doc))
+export const swaggerYAML = async (app : Application, doc : TSwaggerDoc = {}) => {
+    return yaml.dump(await specSwagger(app , doc))
 }
 
 /**
  * 
- * @param {Application} express  Application express() instance
+ * @param {Application} app  Application express() instance
  * @param {object} doc
  * @property {string | null} data.path
  * @property {string | null} data.staticUrl
@@ -557,13 +582,13 @@ export const swaggerYAML = async (express : Application, doc : TSwaggerDoc = {})
  * @property {Array | null} data.responses
  *
  */
-export const swaggerJSON = async (express : Application, doc : TSwaggerDoc = {}) => {
-    return JSON.stringify(await specSwagger(express , doc),null,2)
+export const swaggerJSON = async (app : Application, doc : TSwaggerDoc = {}) => {
+    return JSON.stringify(await specSwagger(app , doc),null,2)
 }
 
 /**
  * 
- * @param {Application} express  Application express() instance
+ * @param {Application} app  Application express() instance
  * @param {object} doc
  * @property {string | null} data.path
  * @property {string | null} data.staticUrl
@@ -593,25 +618,31 @@ export const swaggerJSON = async (express : Application, doc : TSwaggerDoc = {})
  * 
  * // open the localhost:3000/api/docs 
  */
-export default (express : Application, doc : TSwaggerDoc = {}) => {
+export default (app : Application, doc : TSwaggerDoc = {}) => {
 
     const STATIC_URL = '/api/static/swagger-ui'
 
-    express.use(STATIC_URL, expressEx.static(swaggerUiDist.getAbsoluteFSPath()))
+    app.use(STATIC_URL, express.static(swaggerUiDist.getAbsoluteFSPath()))
 
     return async (req : Request, res : Response , next : NextFunction) => { 
 
         try {
 
-            if (req.path !== (doc.path ?? '/api/docs')) return next()
+            if (req.path !== (doc.path ?? '/api/docs')) {
+                return next();
+            }
 
-            const spec = doc.use == null 
-            ? JSON.stringify(await specSwagger(express , doc))
-            : String(doc.use).endsWith('.yaml')
-              ? JSON.stringify(yaml.load(fs.readFileSync(doc.use, 'utf8')))
-              : String(doc.use).endsWith('.json')
-                ? fs.readFileSync(doc.use, 'utf8')
-                : JSON.stringify(await specSwagger(express , doc))
+            const loadSpecFile = (file: string) => {
+                return file.endsWith('.yaml')
+                ? JSON.stringify(yaml.load(fs.readFileSync(file, 'utf8')))
+                : fs.readFileSync(file, 'utf8');
+            }
+                
+            const spec = doc.use
+                ? loadSpecFile(doc.use)
+                : JSON.stringify(await specSwagger(app, doc));
+
+            const options = doc.options ?? null;
 
             const iconURL = normalizePath(doc.staticUrl ?? '', `${STATIC_URL}/favicon-32x32.png`).replace(/^\/(http[s]?:\/{0,2})/, '$1')
             const cssURL  = normalizePath(doc.staticUrl ?? '', `${STATIC_URL}/swagger-ui.css`).replace(/^\/(http[s]?:\/{0,2})/, '$1')
@@ -641,12 +672,16 @@ export default (express : Application, doc : TSwaggerDoc = {}) => {
                 <script>
                     window.onload = () => {
                         window.ui = SwaggerUIBundle({ 
-                            spec : ${spec}, 
-                            filter: "true",
                             dom_id: '#swagger-ui',
-                            withCredentials: true,
                             presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset], 
-                            layout: "StandaloneLayout"
+                            spec : ${spec}, 
+                            withCredentials: ${options?.withCredentials ?? "true"},
+                            layout: "${options?.layout ?? 'StandaloneLayout'}",
+                            filter: "${options?.filter ?? "false"}",
+                            docExpansion: "${options?.docExpansion ?? "list"}",
+                            deepLinking: "${options?.deepLinking ?? "true"}",
+                            displayOperationId: "${options?.displayOperationId ?? "false"}",
+                            displayRequestDuration: "${options?.displayRequestDuration ?? "false"}"
                         });
                     };
                 </script>
