@@ -133,8 +133,8 @@ const specPaths = (
 
         const swagger = options.map((option : Function) => {
             const values = option() as { match : { path : string , method : string } }[]
-            const match = values.find((v: { match : { path: string; method : string }}) => {
-                return (String(v?.match?.method).toLocaleLowerCase() === method.toLocaleLowerCase()) && 
+            const match = values.find((v: { match : { path: string; method : string | string[] }}) => {
+                return (String(v?.match?.method).split(',').map(v => v.toLocaleLowerCase()).includes(method.toLocaleLowerCase())) && 
                 (String(v?.match?.path).replace(/:(\w+)/g, "{$1}") === path || 
                 `/api${v?.match?.path}`.replace(/:(\w+)/g, "{$1}") === path)
             })
@@ -628,6 +628,11 @@ export default (express : Application, doc : TSwaggerDoc = {}) => {
                     <link rel="icon" href="${iconURL}">
                     <link rel="stylesheet" href="${cssURL}" />
                 </head>
+                <style>
+                    .swagger-ui .topbar .download-url-wrapper {
+                        visibility: hidden;
+                    }
+                </style>
                 <body>
                     <div id="swagger-ui"></div>
                 </body>
@@ -637,6 +642,7 @@ export default (express : Application, doc : TSwaggerDoc = {}) => {
                     window.onload = () => {
                         window.ui = SwaggerUIBundle({ 
                             spec : ${spec}, 
+                            filter: "true",
                             dom_id: '#swagger-ui',
                             withCredentials: true,
                             presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset], 
@@ -646,7 +652,6 @@ export default (express : Application, doc : TSwaggerDoc = {}) => {
                 </script>
             </html>
             `
-            
             return res.send(html)
 
         } catch (err) {
